@@ -1,0 +1,67 @@
+name: diun
+
+services:
+  diun:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: diun:local
+    container_name: diun
+    restart: unless-stopped
+    user: "${DIUN_UID}:${DOCKER_GID}"
+    read_only: true
+    ipc: none
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add: []
+    env_file:
+      - .env
+    environment:
+      - GOMEMLIMIT=100MiB
+      - GOMAXPROCS=2
+      - DIUN_PROVIDERS_DOCKER=true
+      - DIUN_PROVIDERS_FILE_FILENAME=/custom-images.yaml
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+          pids: 30
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./custom-images.yaml:/custom-images.yaml:ro
+      - ./data:/data:rw,noexec,nosuid,nodev
+    secrets:
+      - diun_notif_ntfy_endpoint
+      - diun_notif_ntfy_topic
+      - diun_notif_ntfy_token
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/diun", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - diun
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+secrets:
+  diun_notif_ntfy_endpoint:
+    file: ./secrets/diun_notif_ntfy_endpoint
+  diun_notif_ntfy_topic:
+    file: ./secrets/diun_notif_ntfy_topic
+  diun_notif_ntfy_token:
+    file: ./secrets/diun_notif_ntfy_token
+
+networks:
+  diun:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "false"

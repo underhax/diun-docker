@@ -1,0 +1,8 @@
+- name: ghcr.io/underhax/diun-docker:latest
+- name: ghcr.io/underhax/mihomo-warp-proxy:latest-amd64v3
+- name: ghcr.io/underhax/agh-unbound-lego:latest
+- name: ghcr.io/underhax/speedybench:latest
+- name: ghcr.io/underhax/audiobookshelf-transcoder-proxy:latest
+- name: ghcr.io/webstudiobond/wordpress-docker:latest
+- name: ghcr.io/webstudiobond/stalwart-docker:latest
+- name: ghcr.io/webstudiobond/go-notifier:latest
