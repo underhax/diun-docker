@@ -5,7 +5,9 @@ services:
     image: ghcr.io/underhax/diun-docker:${DIUN_VERSION:-latest}
     container_name: diun
     restart: unless-stopped
-    user: "${DIUN_UID}:${DOCKER_GID}"
+    user: "${DIUN_UID}:${DIUN_UID}"
+    group_add:
+      - "${DOCKER_GID}"
     read_only: true
     ipc: none
     security_opt:

@@ -13,7 +13,7 @@ Hardened, zero-trust containerized deployment architecture for [Diun (Docker Ima
 
 * **Scratch Runtime:** Built `FROM scratch` with CA certificates and no shell, package manager, or system utilities. Ships only the upstream `diun` binary, the persistent database directory mount (`/data`), and a minimal static Go binary `init` that mediates Docker Secrets before launching Diun.
 * **In-Memory Secret Mediation:** Universal Docker Secret mediation via `init` discovers `/run/secrets/diun_*` and maps them directly to uppercase `DIUN_*` environment variables in-memory before exec-ing `/usr/local/bin/diun`. Plaintext sensitive credentials (e.g., webhook topics, Telegram bot tokens, chat IDs) never appear in `docker inspect`, container inspection metadata, Compose manifests, or `.env` files.
-* **Least-Privilege & Host DAC Boundaries:** The dedicated unprivileged host user (`diun`) has login disabled (`/usr/sbin/nologin`, locked password) and is intentionally NOT added to the host `docker` group. The container runs with `user: "${DIUN_UID}:${DOCKER_GID}"`, granting the daemon process access strictly to `/var/run/docker.sock` via the Docker socket group ID without giving the host user host-level docker group privileges.
+* **Least-Privilege & Host DAC Boundaries:** The dedicated unprivileged host user (`diun`) has login disabled (`/usr/sbin/nologin`, locked password) and is intentionally NOT added to the host `docker` group. The container runs with `user: "${DIUN_UID}:${DIUN_UID}"` and `group_add: ["${DOCKER_GID}"]`, granting the daemon process access to host-managed configuration and secrets via its primary service group while accessing `/var/run/docker.sock` via the supplementary Docker socket group without elevating host user privileges.
 * **Read-Only Root & Dropped Capabilities:** The container root filesystem is mounted strictly read-only (`read_only: true`), all Linux kernel capabilities are dropped (`cap_drop: ALL`), privilege escalation is blocked (`no-new-privileges:true`), and IPC namespace sharing is disabled (`ipc: none`).
 * **Storage Hardening:** The local state directory (`/data`) is mounted via a named local volume using restrictive mount options (`rw,noexec,nosuid,nodev`). All bind mounts use Compose long or hardened syntax to prevent automatic host directory creation with default root permissions.
 * **Network Isolation:** Runs on an isolated bridge network with inter-container communication disabled (`com.docker.network.bridge.enable_icc: "false"`), allowing required HTTPS egress to public registries and notification endpoints with zero exposed ingress ports.
@@ -143,7 +143,7 @@ Any sensitive configuration parameter across all notification providers ([offici
 
 ### 6. Host Permissions &amp; Privilege Separation
 
-Keep deployment inputs and service configuration outside the service account's write access. The container runs with the numeric `DIUN_UID:DOCKER_GID` and needs write access only to `/home/diun/data`. A compromised Diun process cannot replace its Compose manifest, configuration, or secret files.
+Keep deployment inputs and service configuration outside the service account's write access. The container runs with numeric `DIUN_UID:DIUN_UID` (plus supplementary `DOCKER_GID`) and needs write access only to `/home/diun/data`. A compromised Diun process cannot replace its Compose manifest, configuration, or secret files.
 
 Use `root:diun` for host-managed, service-readable files, and `diun:diun` only for runtime storage:
 
