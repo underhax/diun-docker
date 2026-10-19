@@ -49,16 +49,17 @@ Production directory layout on the host (`/home/diun`):
 
 ### 1. Create a Dedicated System User
 
-Choose an unprivileged numeric ID (e.g. `2000`) and verify that it is not already in use by another user or group on the host:
+Choose a dedicated, unprivileged numeric ID unique to this service on your host and verify that it is not already in use by another user or group:
 
 ```bash
-DIUN_UID=2000
+# Choose an unused numeric UID/GID unique to this service on your host
+DIUN_UID=<CHOSEN_UID>
 
 getent passwd ${DIUN_UID}
 getent group ${DIUN_UID}
 ```
 
-> **Note:** Both commands must return empty output. If either command outputs an existing account or group on your host, choose a different unused numeric ID (e.g. `2001`, `2002`) before proceeding.
+> **Important:** Both commands must return empty output. Each containerized service must have its own dedicated unprivileged user and group to enforce strict host DAC privilege separation between different stacks.
 
 Create an unprivileged system account with a matching user-group (`-U`) and disabled login shell. Do NOT add this user to the `docker` group:
 

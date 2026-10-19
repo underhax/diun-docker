@@ -73,12 +73,6 @@ jobs:
           tags: |
             ${{ needs.prepare.outputs.image_base }}:${{ needs.prepare.outputs.diun_ver }}${{ matrix.push_tag_suffix }}
           provenance: false
-          labels: |
-            org.opencontainers.image.title=Diun
-            org.opencontainers.image.description=Hardened Diun scratch container image
-            org.opencontainers.image.version=${{ needs.prepare.outputs.diun_ver }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.licenses=MIT
 
   merge:
     name: Merge fat manifests
