@@ -155,7 +155,8 @@ Use `root:diun` for host-managed, service-readable files, and `diun:diun` only f
 | `custom-images.yaml` | `root:diun` | `0640` | Read-only file-provider image list |
 | `secrets/` directory | `root:diun` | `0750` | Traverse-only access for the service group |
 | `secrets/*` | `root:diun` | `0440` | Read-only to the service group |
-| `data/` | `diun:diun` | `0700` | Private writable runtime storage for BoltDB database |
+| `data/` and subdirectories | `diun:diun` | `0700` | Private runtime storage and nested directories |
+| `data/*` files | `diun:diun` | `0600` | Private read-write storage for BoltDB database |
 
 #### Apply or restore host permissions
 
@@ -176,7 +177,8 @@ sudo find /home/diun/secrets -type d -exec chmod 0750 {} +
 sudo find /home/diun/secrets -type f -exec chmod 0440 {} +
 
 sudo chown -R diun:diun /home/diun/data
-sudo chmod 0700 /home/diun/data
+sudo find /home/diun/data -type d -exec chmod 0700 {} +
+sudo find /home/diun/data -type f -exec chmod 0600 {} +
 ```
 
 ### 7. Start or Update the Stack

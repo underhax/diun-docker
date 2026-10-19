@@ -33,6 +33,10 @@ func mockSuccessfulCommand(ctx context.Context, _ []string) *exec.Cmd {
 	return exec.CommandContext(ctx, "true")
 }
 
+func mockTerminatedExec(ctx context.Context, _, _ []string) error {
+	return exec.CommandContext(ctx, "sh", "-c", "kill -TERM $$").Run()
+}
+
 var recordedExitCode = -1
 
 func mockExitRecorder(code int) {
@@ -104,6 +108,32 @@ func TestDefaultCreateCommand(t *testing.T) {
 		cmd := defaultCreateCommand(ctx, []string{healthcheckCmd, rawFlag})
 		if !slices.Contains(cmd.Args, rawFlag) {
 			t.Errorf("unexpected command: %v", cmd.Args)
+		}
+	})
+
+	t.Run("cancel command returns nil when process not started", func(t *testing.T) {
+		cmd := defaultCreateCommand(ctx, nil)
+		if cmd.Cancel == nil {
+			t.Fatal("expected Cancel function to be configured")
+		}
+		if err := cmd.Cancel(); err != nil {
+			t.Errorf("cmd.Cancel() unexpected error: %v", err)
+		}
+	})
+
+	t.Run("cancel command signals running process", func(t *testing.T) {
+		cmd := exec.CommandContext(ctx, "sleep", "10")
+		cancelFn := cancelCommand(cmd)
+		if err := cmd.Start(); err != nil {
+			t.Fatalf("cmd.Start() unexpected error: %v", err)
+		}
+		defer func() {
+			if waitErr := cmd.Wait(); waitErr != nil && !IsTermination(ctx, waitErr) {
+				t.Errorf("cmd.Wait() unexpected error: %v", waitErr)
+			}
+		}()
+		if err := cancelFn(); err != nil {
+			t.Errorf("cancelFn() unexpected error: %v", err)
 		}
 	})
 }
@@ -305,12 +335,90 @@ func TestExitCode(t *testing.T) {
 			name: "exit error extracts subprocess status code",
 			want: 1,
 		},
+		{
+			err:  exec.CommandContext(context.Background(), "sh", "-c", "kill -TERM $$").Run(),
+			name: "termination signal returns zero exit code",
+			want: 0,
+		},
+		{
+			err:  exec.CommandContext(context.Background(), "sh", "-c", "kill -INT $$").Run(),
+			name: "interrupt signal returns zero exit code",
+			want: 0,
+		},
+		{
+			err:  exec.CommandContext(context.Background(), "sh", "-c", "kill -ABRT $$").Run(),
+			name: "other signal returns 128 plus signal code",
+			want: 134,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := ExitCode(tc.err); got != tc.want {
 				t.Errorf("ExitCode() = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsTermination(t *testing.T) {
+	canceledCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	tests := []struct {
+		ctx  context.Context
+		err  error
+		name string
+		want bool
+	}{
+		{
+			ctx:  context.Background(),
+			err:  nil,
+			name: "nil error with active context",
+			want: false,
+		},
+		{
+			ctx:  context.Background(),
+			err:  errors.New("standard error"),
+			name: "standard error with active context",
+			want: false,
+		},
+		{
+			ctx:  canceledCtx,
+			err:  context.Canceled,
+			name: "canceled context error",
+			want: true,
+		},
+		{
+			ctx:  context.Background(),
+			err:  exec.CommandContext(context.Background(), "sh", "-c", "kill -TERM $$").Run(),
+			name: "subprocess killed by sigterm",
+			want: true,
+		},
+		{
+			ctx:  context.Background(),
+			err:  exec.CommandContext(context.Background(), "sh", "-c", "kill -INT $$").Run(),
+			name: "subprocess killed by sigint",
+			want: true,
+		},
+		{
+			ctx:  context.Background(),
+			err:  exec.CommandContext(context.Background(), "sh", "-c", "kill -KILL $$").Run(),
+			name: "subprocess killed by sigkill",
+			want: true,
+		},
+		{
+			ctx:  context.Background(),
+			err:  exec.CommandContext(context.Background(), "false").Run(),
+			name: "subprocess non-signal failure",
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := IsTermination(tc.ctx, tc.err); got != tc.want {
+				t.Errorf("IsTermination() = %v, want %v", got, tc.want)
 			}
 		})
 	}
@@ -404,5 +512,24 @@ func TestMain_Failure(t *testing.T) {
 
 	if recordedExitCode != 1 {
 		t.Errorf("main() expected exit code 1, got %d", recordedExitCode)
+	}
+}
+
+func TestMain_Termination(t *testing.T) {
+	originalExec := execProcess
+	originalExit := exitFunc
+	defer func() {
+		execProcess = originalExec
+		exitFunc = originalExit
+	}()
+
+	execProcess = mockTerminatedExec
+	recordedExitCode = -1
+	exitFunc = mockExitRecorder
+
+	main()
+
+	if recordedExitCode != 0 {
+		t.Errorf("main() on termination expected exit code 0, got %d", recordedExitCode)
 	}
 }
