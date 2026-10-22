@@ -1,6 +1,6 @@
 FROM ghcr.io/crazy-max/diun:4.33.0@sha256:e324b793eb32dfb7f74d3a39421ebf090141caaadee69b8f78da63112408ee25 AS donor
 
-FROM golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS go-builder
+FROM golang:1.27.3-alpine3.24@sha256:f2c872bcee949b7be9c490efd02b48a8a2fbf947cdf533f1c58525ec9d8170fd AS go-builder
 
 WORKDIR /build
 
@@ -25,4 +25,3 @@ ENV DIUN_DB_PATH="/data/diun.db"
 
 ENTRYPOINT ["/usr/local/bin/init"]
 CMD ["serve"]
-
