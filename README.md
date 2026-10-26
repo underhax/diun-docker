@@ -1,7 +1,6 @@
 # Hardened Containerized Diun (Docker Image Update Notifier)
 
 [![CI](https://github.com/underhax/diun-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/underhax/diun-docker/actions/workflows/ci.yml)
-[![Build](https://github.com/underhax/diun-docker/actions/workflows/build.yml/badge.svg)](https://github.com/underhax/diun-docker/actions/workflows/build.yml)
 [![GitHub last commit](https://img.shields.io/github/last-commit/underhax/diun-docker)](https://github.com/underhax/diun-docker/commits/main)
 [![GitHub issues](https://img.shields.io/github/issues/underhax/diun-docker)](https://github.com/underhax/diun-docker/issues)
 [![GitHub repo size](https://img.shields.io/github/repo-size/underhax/diun-docker)](https://github.com/underhax/diun-docker)
