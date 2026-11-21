@@ -2,7 +2,7 @@ name: diun
 
 services:
   diun:
-    image: ghcr.io/underhax/diun-docker:${DIUN_VERSION:-latest}
+    image: ghcr.io/underhax/diun:${DIUN_VERSION:-latest}
     container_name: diun
     restart: always
     user: "${DIUN_UID}:${DIUN_UID}"
