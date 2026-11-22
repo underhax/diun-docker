@@ -1,4 +1,4 @@
-FROM ghcr.io/crazy-max/diun:4.33.1@sha256:8cc638b4c54e8a0c47898a51b20dae73037ad43310168b5da543a311dc668f77 AS donor
+FROM ghcr.io/crazy-max/diun:4.34.0@sha256:f350e8e7cc0e3b33d500e2fc462ac9273d8954327f32e2501b34b6bef5a0de3e AS donor
 
 FROM golang:1.27.4-alpine3.24@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS go-builder
 
